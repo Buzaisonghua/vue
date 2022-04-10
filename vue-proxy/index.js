@@ -1,14 +1,13 @@
 const bucket = new WeakMap()
 
 const data = {
-    show: true,
-    text: 'hello word'
+    text: 'hello word',
+    show: true
 }
 
 let activeEffect;
-
-function  effect(fn) {
-    const effectFn =() => {
+function effect(fn) {
+    function effectFn() {
         cleanup(effectFn)
         activeEffect = effectFn
         fn()
@@ -17,56 +16,52 @@ function  effect(fn) {
     effectFn()
 }
 
+function cleanup(effectFn) {
+    for(let i = 0; i < effectFn.deps.length; i++ ) {
+        const deps = effectFn.deps[i]
+        deps.delete(effectFn)
+    }
+    effectFn.deps = []
+}
+
 const obj = new Proxy(data, {
-    get(target, key) {
+    get(target, key){
         getData(target, key)
         return target[key]
     },
-    set(target, key,  value) {
+    set(target, key, value) {
         target[key] = value
         setData(target, key)
     }
 })
 
 function getData(target, key) {
-    console.log('get')
+    console.log('get');
     if (!activeEffect) return
-    let depsMap = bucket.get(target)
-    if (!depsMap) {
-        bucket.set(target, (depsMap = new Map()))
-    }
-    let deps = depsMap.get(key)
-    if (!deps) { depsMap.set(key, (deps = new Set())) }
-    deps.add(activeEffect)
-    activeEffect.deps.push(deps)
+    let dempMap = bucket.get(target)
+    if (!dempMap) bucket.set(target, (dempMap = new Map))
+    let demp = dempMap.get(key)
+    if (!demp) dempMap.set(key, (demp = new Set()))
+    demp.add(activeEffect)
+    activeEffect.deps.push(demp)
 }
-
 
 function setData(target, key) {
     console.log('set')
-    const depsData = bucket.get(target)
-    if (!depsData) return
-    const deps = depsData.get(key)
-    const effect = new Set(deps)
-    effect.forEach(fn => fn())
-}
-
-function cleanup(effectFn) {
-    for (let i = 0; i < effectFn.deps.length; i++) {
-        const deps = effectFn.deps[i]
-        deps.delete(effectFn)
-    }
-    effectFn.deps.length = 0
+    const dempMap = bucket.get(target)
+    if (!dempMap) return
+    const demp = dempMap.get(key)
+    const effect = new Set(demp)
+    effect && effect.forEach(fn => fn())
 }
 
 effect(() => {
-    document.body.innerHTML =  obj.show ? obj.text : '111'
+    document.body.innerHTML = obj.show ? obj.text : '1111'
 })
 
 setTimeout(() => {
     obj.show = false
     setTimeout(() => {
-        console.log(1)
         obj.text = '1111'
-    }, 2000)
-}, 2000)
+    }, 200)
+}, 200)
